@@ -1,0 +1,23 @@
+{% extends "gallery/base.html" %}
+
+{% block content %}
+<div class="enter-container">
+    <div class="enter-box">
+        <h1>PRIVATE ALBUM</h1>
+        <p class="subtitle">This collection is protected.</p>
+        
+        <form method="post" action="{% url 'enter' %}">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Enter password" autofocus required>
+            </div>
+            
+            {% if error %}
+                <p class="error-msg">{{ error }}</p>
+            {% endif %}
+            
+            <button type="submit" class="btn-enter">Enter</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

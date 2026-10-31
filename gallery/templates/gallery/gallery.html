@@ -1,0 +1,53 @@
+{% extends "gallery/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="floating-upload">
+    <a href="{% url 'photo_upload' %}" class="btn-upload-link">&#8679; Upload</a>
+</div>
+
+<form method="post" action="{% url 'lock' %}" class="lock-form floating-lock">
+    {% csrf_token %}
+    <button type="submit" class="btn-lock" aria-label="Lock Gallery">&#128274; Lock</button>
+</form>
+
+<div id="welcome-popup" class="welcome-popup">
+    <div class="welcome-popup-content">
+        <!-- <h2>Welcome to your private collection</h2> -->
+        <p>Press the image to get the delete button. Once deleted, the image will be permanently deleted from the server. And I was left with only these copies.</p>
+        <button id="welcome-close">Enter</button>
+    </div>
+</div>
+
+<main class="masonry-grid">
+    {% for photo in photos %}
+        <div class="masonry-item" data-photo-id="{{ photo.id }}" data-full-src="{{ photo.full_url }}">
+            <img src="{{ photo.thumbnail_url }}" 
+                 alt="Photograph {{ photo.id }}" 
+                 loading="lazy">
+            
+            <form method="post" action="{% url 'photo_delete' photo.id %}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this photo?');">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete" aria-label="Delete photo">Delete</button>
+            </form>
+            
+            <div class="photo-overlay"></div>
+        </div>
+    {% empty %}
+        <p class="empty-msg">No photographs in this collection yet.</p>
+    {% endfor %}
+</main>
+
+<div id="lightbox" class="lightbox">
+    <div class="lightbox-content">
+        <img id="lightbox-img" src="" alt="Full size image">
+        <button id="lightbox-close" class="lightbox-btn close-btn" aria-label="Close">&times;</button>
+        <button id="lightbox-prev" class="lightbox-btn nav-btn prev-btn" aria-label="Previous">&#10094;</button>
+        <button id="lightbox-next" class="lightbox-btn nav-btn next-btn" aria-label="Next">&#10095;</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script src="{% static 'gallery/js/lightbox.js' %}"></script>
+{% endblock %}

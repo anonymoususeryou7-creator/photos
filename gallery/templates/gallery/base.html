@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Private Album{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'gallery/css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+    {% block extra_body %}{% endblock %}
+<script src="{% static 'gallery/js/prevent.js' %}"></script>
+</body>
+</html>

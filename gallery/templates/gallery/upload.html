@@ -1,0 +1,186 @@
+﻿{% extends "gallery/base.html" %}
+{% load static %}
+
+{% block title %}Upload Photos{% endblock %}
+
+{% block content %}
+<div class="upload-page">
+
+    <header class="upload-header">
+        <a href="{% url 'gallery' %}" class="back-link">&#8592; Back to Gallery</a>
+        <h1>Upload Photos</h1>
+        <p class="upload-subtitle">Select or drag multiple images to upload to your private collection.</p>
+    </header>
+
+    {% if errors %}
+    <div class="upload-errors">
+        <p class="upload-error-title">&#9888; Some uploads failed:</p>
+        <ul>
+            {% for err in errors %}
+            <li>{{ err }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+
+        <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-inner">
+                <span class="drop-icon">&#128247;</span>
+                <p class="drop-text">Drag &amp; drop images here</p>
+                <p class="drop-sub">or</p>
+                <label for="file-input" class="btn-choose">Choose Files</label>
+                <input type="file" id="file-input" name="images" multiple accept="image/*" class="file-input-hidden">
+            </div>
+        </div>
+
+        <div class="upload-actions" id="upload-actions" style="display:none;">
+            <div class="file-count-badge" id="file-count">0 photos selected</div>
+            <button type="submit" class="btn-upload" id="btn-upload">Upload Photos</button>
+            <button type="button" class="btn-clear" id="btn-clear">Clear All</button>
+        </div>
+
+        <div class="preview-grid" id="preview-grid"></div>
+
+        <div class="upload-progress" id="upload-progress" style="display:none;">
+            <div class="progress-bar" id="progress-bar"></div>
+            <p class="progress-label" id="progress-label">Uploading...</p>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(function () {
+    const dropZone   = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const previewGrid = document.getElementById('preview-grid');
+    const actions    = document.getElementById('upload-actions');
+    const countBadge = document.getElementById('file-count');
+    const btnClear   = document.getElementById('btn-clear');
+    const form       = document.getElementById('upload-form');
+    const progress   = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const progressLabel = document.getElementById('progress-label');
+
+    let dt = new DataTransfer();
+
+    function updateCount() {
+        const n = dt.files.length;
+        countBadge.textContent = n === 1 ? '1 photo selected' : n + ' photos selected';
+        actions.style.display = n > 0 ? 'flex' : 'none';
+    }
+
+    function addFiles(newFiles) {
+        Array.from(newFiles).forEach(function(file) {
+            if (!file.type.startsWith('image/')) return;
+            const exists = Array.from(dt.files).some(function(f) {
+                return f.name === file.name && f.size === file.size;
+            });
+            if (exists) return;
+            dt.items.add(file);
+            renderPreview(file);
+        });
+        fileInput.files = dt.files;
+        updateCount();
+    }
+
+    function renderPreview(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+            item.dataset.name = file.name;
+            item.dataset.size = file.size;
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'preview-remove';
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.title = 'Remove';
+            removeBtn.addEventListener('click', function() { removeFile(file, item); });
+
+            const label = document.createElement('span');
+            label.className = 'preview-label';
+            label.textContent = file.name.length > 18
+                ? file.name.slice(0, 15) + '...'
+                : file.name;
+
+            item.appendChild(img);
+            item.appendChild(removeBtn);
+            item.appendChild(label);
+            previewGrid.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeFile(file, itemEl) {
+        const newDt = new DataTransfer();
+        Array.from(dt.files).forEach(function(f) {
+            if (!(f.name === file.name && f.size === file.size)) {
+                newDt.items.add(f);
+            }
+        });
+        dt = newDt;
+        fileInput.files = dt.files;
+        itemEl.remove();
+        updateCount();
+    }
+
+    function clearAll() {
+        dt = new DataTransfer();
+        fileInput.files = dt.files;
+        previewGrid.innerHTML = '';
+        updateCount();
+    }
+
+    fileInput.addEventListener('change', function() {
+        addFiles(fileInput.files);
+    });
+
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', function() {
+        dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        addFiles(e.dataTransfer.files);
+    });
+
+    dropZone.addEventListener('click', function(e) {
+        var targets = [dropZone, dropZone.querySelector('.drop-zone-inner'),
+            dropZone.querySelector('.drop-text'), dropZone.querySelector('.drop-icon'),
+            dropZone.querySelector('.drop-sub')];
+        if (targets.indexOf(e.target) !== -1) {
+            fileInput.click();
+        }
+    });
+
+    btnClear.addEventListener('click', clearAll);
+
+    form.addEventListener('submit', function() {
+        if (dt.files.length === 0) return;
+        progress.style.display = 'block';
+        progressBar.style.width = '0%';
+        var pct = 0;
+        var interval = setInterval(function() {
+            pct = Math.min(pct + Math.random() * 12, 90);
+            progressBar.style.width = pct + '%';
+            progressLabel.textContent = 'Uploading... ' + Math.round(pct) + '%';
+        }, 200);
+    });
+})();
+</script>
+{% endblock %}

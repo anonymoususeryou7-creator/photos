@@ -1,0 +1,10 @@
+Django
+Pillow
+python-dotenv
+psycopg[binary]
+django-cloudinary-storage
+whitenoise
+gunicorn
+uvicorn
+dj-database-url
+django-cleanup
